@@ -25,15 +25,25 @@ func main() {
 
 	paymentRepo := mysqlRepo.NewPaymentRepository(db)
 
-	createPayment := &usecase.CreatePayment{Repo: paymentRepo}
+	createPayment := usecase.NewCreatePaymentUseCase(paymentRepo)
+	updatePayment := usecase.NewUpdatePaymentUseCase(paymentRepo)
+	getPayment := usecase.NewGetPaymentUseCase(paymentRepo)
+	getAllPayments := usecase.NewGetAllPaymentsUseCase(paymentRepo)
+	deletePayment := usecase.NewDeletePaymentUseCase(paymentRepo)
 
-	router := httpRouter.NewRouter(createPayment)
+	router := httpRouter.NewRouter(
+		createPayment,
+		updatePayment,
+		getPayment,
+		getAllPayments,
+		deletePayment,
+	)
 
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "8080"
 	}
 
+	log.Println("Server running on :" + port)
 	log.Fatal(http.ListenAndServe(":"+port, router))
-	log.Println("Server running on :8080")
 }

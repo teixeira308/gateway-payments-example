@@ -26,3 +26,14 @@ func NewPayment(id string, amount float64, method string) *Payment {
 		CreatedAt: time.Now().In(location),
 	}
 }
+
+func UpdatePayment(id string, amount float64, method string) *Payment {
+	location := time.FixedZone("America/Sao_Paulo", -3*60*60)
+	return &Payment{
+		ID:        id,
+		Amount:    amount,
+		Method:    method,
+		Status:    StatusPending,
+		CreatedAt: time.Now().In(location),
+	}
+}

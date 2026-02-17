@@ -10,6 +10,10 @@ type CreatePaymentRequest struct {
 	Method string  `json:"method"`
 }
 
+type UpdatePaymentRequest struct {
+	Status string `json:"status"`
+}
+
 type PaymentResponse struct {
 	ID        string    `json:"id"`
 	Amount    float64   `json:"amount"`

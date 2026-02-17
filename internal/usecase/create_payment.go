@@ -11,6 +11,12 @@ type CreatePayment struct {
 	Repo repository.PaymentRepository
 }
 
+func NewCreatePaymentUseCase(repo repository.PaymentRepository) *CreatePayment {
+	return &CreatePayment{
+		Repo: repo,
+	}
+}
+
 func (pc *CreatePayment) Execute(method string, amount float64) (*entity.Payment, error) {
 	payment := entity.NewPayment(uuid.NewString(), amount, method)
 
