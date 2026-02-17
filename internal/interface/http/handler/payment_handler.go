@@ -12,6 +12,18 @@ import (
 	"github.com/go-chi/chi/v5"
 )
 
+// ErrorResponse represents a standardized JSON error response
+type ErrorResponse struct {
+	Message string `json:"message"`
+}
+
+// respondWithError sends a JSON error response
+func respondWithError(w http.ResponseWriter, code int, message string) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(code)
+	json.NewEncoder(w).Encode(ErrorResponse{Message: message})
+}
+
 type PaymentHandler struct {
 	CreatePayment  *usecase.CreatePayment
 	UpdatePayment  *usecase.UpdatePayment
@@ -24,13 +36,13 @@ func (h *PaymentHandler) Create(w http.ResponseWriter, r *http.Request) {
 	var input dto.CreatePaymentRequest
 
 	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		respondWithError(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
 	payment, err := h.CreatePayment.Execute(input.Method, input.Amount)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		respondWithError(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
@@ -44,13 +56,13 @@ func (h *PaymentHandler) Create(w http.ResponseWriter, r *http.Request) {
 func (h *PaymentHandler) Update(w http.ResponseWriter, r *http.Request) {
 	paymentID := chi.URLParam(r, "id")
 	if paymentID == "" {
-		http.Error(w, "payment ID is required", http.StatusBadRequest)
+		respondWithError(w, http.StatusBadRequest, "payment ID is required")
 		return
 	}
 
 	var input dto.UpdatePaymentRequest
 	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		respondWithError(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
@@ -62,10 +74,10 @@ func (h *PaymentHandler) Update(w http.ResponseWriter, r *http.Request) {
 	err := h.UpdatePayment.Execute(usecaseInput)
 	if err != nil {
 		if errors.Is(err, errors.New("payment not found")) {
-			http.Error(w, err.Error(), http.StatusNotFound)
+			respondWithError(w, http.StatusNotFound, err.Error())
 			return
 		}
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		respondWithError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
@@ -75,7 +87,7 @@ func (h *PaymentHandler) Update(w http.ResponseWriter, r *http.Request) {
 func (h *PaymentHandler) Get(w http.ResponseWriter, r *http.Request) {
 	paymentID := chi.URLParam(r, "id")
 	if paymentID == "" {
-		http.Error(w, "payment ID is required", http.StatusBadRequest)
+		respondWithError(w, http.StatusBadRequest, "payment ID is required")
 		return
 	}
 
@@ -88,10 +100,10 @@ func (h *PaymentHandler) Get(w http.ResponseWriter, r *http.Request) {
 		// It's better to check the specific error returned by the use case (e.g., from repository)
 		// For now, a generic "payment not found" check is used.
 		if err.Error() == fmt.Sprintf("payment with ID %s not found", paymentID) { // Specific error check
-			http.Error(w, err.Error(), http.StatusNotFound)
+			respondWithError(w, http.StatusNotFound, err.Error())
 			return
 		}
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		respondWithError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
@@ -121,7 +133,7 @@ func (h *PaymentHandler) List(w http.ResponseWriter, r *http.Request) {
 
 	paymentsOutput, err := h.GetAllPayments.Execute(usecaseInput)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		respondWithError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
@@ -133,7 +145,7 @@ func (h *PaymentHandler) List(w http.ResponseWriter, r *http.Request) {
 func (h *PaymentHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	paymentID := chi.URLParam(r, "id")
 	if paymentID == "" {
-		http.Error(w, "payment ID is required", http.StatusBadRequest)
+		respondWithError(w, http.StatusBadRequest, "payment ID is required")
 		return
 	}
 
@@ -144,10 +156,10 @@ func (h *PaymentHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	err := h.DeletePayment.Execute(usecaseInput)
 	if err != nil {
 		if err.Error() == fmt.Sprintf("payment with ID %s not found for deletion", paymentID) {
-			http.Error(w, err.Error(), http.StatusNotFound)
+			respondWithError(w, http.StatusNotFound, err.Error())
 			return
 		}
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		respondWithError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
