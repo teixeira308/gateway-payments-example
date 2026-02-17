@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"fmt"
 	"gateway-payments/internal/domain/entity"
-	"time"
 )
 
 type PaymentRepository struct {
@@ -18,7 +17,6 @@ func NewPaymentRepository(db *sql.DB) *PaymentRepository {
 func (r *PaymentRepository) Save(payment *entity.Payment) error {
 	// Definimos o tempo no Go antes de salvar
 	// Assim temos o valor exato para retornar na API
-	payment.CreatedAt = time.Now()
 
 	// Se o status estiver vazio na entidade, garantimos o PENDING
 	if payment.Status == "" {

@@ -12,11 +12,7 @@ type CreatePayment struct {
 }
 
 func (pc *CreatePayment) Execute(method string, amount float64) (*entity.Payment, error) {
-	payment := &entity.Payment{
-		ID:     uuid.NewString(),
-		Amount: amount,
-		Method: method,
-	}
+	payment := entity.NewPayment(uuid.NewString(), amount, method)
 
 	err := pc.Repo.Save(payment)
 	if err != nil {
