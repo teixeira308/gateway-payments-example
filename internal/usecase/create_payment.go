@@ -17,8 +17,8 @@ func NewCreatePaymentUseCase(repo repository.PaymentRepository) *CreatePayment {
 	}
 }
 
-func (pc *CreatePayment) Execute(method string, amount float64) (*entity.Payment, error) {
-	payment := entity.NewPayment(uuid.NewString(), amount, method)
+func (pc *CreatePayment) Execute(method string, amount float64, orderID string) (*entity.Payment, error) {
+	payment := entity.NewPayment(uuid.NewString(), orderID, amount, method)
 
 	err := pc.Repo.Save(payment)
 	if err != nil {

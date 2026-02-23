@@ -10,6 +10,9 @@ CREATE TABLE IF NOT EXISTS payments (
     
     -- Método de pagamento (PIX, CREDIT_CARD, etc)
     method VARCHAR(20) NOT NULL,
+
+    -- ID da Order associada a esse pagamento
+    order_id VARCHAR(36) NULL,
     
     -- Status: Aceita NULL 
     status VARCHAR(20) NULL,
@@ -18,5 +21,6 @@ CREATE TABLE IF NOT EXISTS payments (
     created_at DATETIME(6) NOT NULL,
 
     PRIMARY KEY (id),
-    INDEX idx_status (status)
+    INDEX idx_status (status),
+    INDEX idx_order_id (order_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

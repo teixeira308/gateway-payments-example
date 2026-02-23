@@ -32,6 +32,22 @@ type PaymentHandler struct {
 	DeletePayment  *usecase.DeletePayment
 }
 
+func NewPaymentHandler(
+	createPayment *usecase.CreatePayment,
+	updatePayment *usecase.UpdatePayment,
+	getPayment *usecase.GetPayment,
+	getAllPayments *usecase.GetAllPayments,
+	deletePayment *usecase.DeletePayment,
+) *PaymentHandler {
+	return &PaymentHandler{
+		CreatePayment:  createPayment,
+		UpdatePayment:  updatePayment,
+		GetPayment:     getPayment,
+		GetAllPayments: getAllPayments,
+		DeletePayment:  deletePayment,
+	}
+}
+
 func (h *PaymentHandler) Create(w http.ResponseWriter, r *http.Request) {
 	var input dto.CreatePaymentRequest
 
@@ -40,7 +56,7 @@ func (h *PaymentHandler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	payment, err := h.CreatePayment.Execute(input.Method, input.Amount)
+	payment, err := h.CreatePayment.Execute(input.Method, input.Amount, input.OrderID)
 	if err != nil {
 		respondWithError(w, http.StatusBadRequest, err.Error())
 		return
@@ -107,9 +123,11 @@ func (h *PaymentHandler) Get(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	response := dto.CreatePaymentResponse(payment)
+
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(payment)
+	json.NewEncoder(w).Encode(response)
 }
 
 func (h *PaymentHandler) List(w http.ResponseWriter, r *http.Request) {
@@ -137,9 +155,14 @@ func (h *PaymentHandler) List(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	responses := make([]*dto.PaymentResponse, len(paymentsOutput.Payments))
+	for i, payment := range paymentsOutput.Payments {
+		responses[i] = dto.CreatePaymentResponse(payment)
+	}
+
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(paymentsOutput.Payments)
+	json.NewEncoder(w).Encode(responses)
 }
 
 func (h *PaymentHandler) Delete(w http.ResponseWriter, r *http.Request) {

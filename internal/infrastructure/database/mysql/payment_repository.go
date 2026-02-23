@@ -27,25 +27,27 @@ func (r *PaymentRepository) Save(payment *entity.Payment) error {
 	}
 
 	if exists {
-		query := `UPDATE payments SET method = ?, amount = ?, status = ? WHERE id = ?`
+		query := `UPDATE payments SET method = ?, amount = ?, status = ?, order_id = ? WHERE id = ?`
 		_, err := r.DB.Exec(
 			query,
 			payment.Method,
 			payment.Amount,
 			payment.Status,
+			payment.OrderID,
 			payment.ID,
 		)
 		if err != nil {
 			return fmt.Errorf("error updating payment [%s]: %w", payment.ID, err)
 		}
 	} else {
-		query := `INSERT INTO payments (id, method, amount, status, created_at) VALUES (?, ?, ?, ?, ?)`
+		query := `INSERT INTO payments (id, method, amount, status, order_id, created_at) VALUES (?, ?, ?, ?, ?, ?)`
 		_, err := r.DB.Exec(
 			query,
 			payment.ID,
 			payment.Method,
 			payment.Amount,
 			payment.Status,
+			payment.OrderID,
 			payment.CreatedAt,
 		)
 		if err != nil {
@@ -58,12 +60,13 @@ func (r *PaymentRepository) Save(payment *entity.Payment) error {
 
 func (r *PaymentRepository) FindByID(id string) (*entity.Payment, error) {
 	payment := &entity.Payment{}
-	query := `SELECT id, method, amount, status, created_at FROM payments WHERE id = ?`
+	query := `SELECT id, method, amount, status, order_id, created_at FROM payments WHERE id = ?`
 	err := r.DB.QueryRow(query, id).Scan(
 		&payment.ID,
 		&payment.Method,
 		&payment.Amount,
 		&payment.Status,
+		&payment.OrderID,
 		&payment.CreatedAt,
 	)
 
@@ -79,7 +82,7 @@ func (r *PaymentRepository) FindByID(id string) (*entity.Payment, error) {
 
 func (r *PaymentRepository) FindAll(page, limit int) ([]*entity.Payment, error) {
 	offset := (page - 1) * limit
-	query := `SELECT id, method, amount, status, created_at FROM payments LIMIT ? OFFSET ?`
+	query := `SELECT id, method, amount, status, order_id, created_at FROM payments LIMIT ? OFFSET ?`
 	rows, err := r.DB.Query(query, limit, offset)
 	if err != nil {
 		return nil, fmt.Errorf("error querying payments: %w", err)
@@ -94,6 +97,7 @@ func (r *PaymentRepository) FindAll(page, limit int) ([]*entity.Payment, error) 
 			&payment.Method,
 			&payment.Amount,
 			&payment.Status,
+			&payment.OrderID,
 			&payment.CreatedAt,
 		); err != nil {
 			return nil, fmt.Errorf("error scanning payment row: %w", err)

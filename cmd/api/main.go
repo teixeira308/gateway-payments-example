@@ -11,6 +11,7 @@ import (
 	"gateway-payments/internal/infrastructure/config"
 	mysqlRepo "gateway-payments/internal/infrastructure/database/mysql"
 	httpRouter "gateway-payments/internal/interface/http"
+	httpHandler "gateway-payments/internal/interface/http/handler"
 	"gateway-payments/internal/usecase"
 )
 
@@ -31,12 +32,16 @@ func main() {
 	getAllPayments := usecase.NewGetAllPaymentsUseCase(paymentRepo)
 	deletePayment := usecase.NewDeletePaymentUseCase(paymentRepo)
 
-	router := httpRouter.NewRouter(
+	paymentHandler := httpHandler.NewPaymentHandler(
 		createPayment,
 		updatePayment,
 		getPayment,
 		getAllPayments,
 		deletePayment,
+	)
+
+	router := httpRouter.NewRouter(
+		paymentHandler,
 	)
 
 	port := os.Getenv("PORT")

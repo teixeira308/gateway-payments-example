@@ -2,27 +2,14 @@ package http
 
 import (
 	"gateway-payments/internal/interface/http/handler"
-	"gateway-payments/internal/usecase"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 )
 
 func NewRouter(
-	createPayment *usecase.CreatePayment,
-	updatePayment *usecase.UpdatePayment,
-	getPayment *usecase.GetPayment,
-	getAllPayments *usecase.GetAllPayments,
-	deletePayment *usecase.DeletePayment,
+	paymentHandler *handler.PaymentHandler,
 ) *chi.Mux {
-	paymentHandler := &handler.PaymentHandler{
-		CreatePayment:  createPayment,
-		UpdatePayment:  updatePayment,
-		GetPayment:     getPayment,
-		GetAllPayments: getAllPayments,
-		DeletePayment:  deletePayment,
-	}
-
 	router := chi.NewRouter()
 	router.Use(middleware.Logger)
 
