@@ -8,6 +8,7 @@ import (
 	"gateway-payments/internal/domain/repository"
 	"gateway-payments/internal/infrastructure/broker"
 	"math/rand"
+	"os"
 	"time"
 
 	"github.com/google/uuid"
@@ -36,37 +37,43 @@ func (pc *CreatePayment) Execute(ctx context.Context, paymentRequested event.Pay
 		return existingPayment, nil // Idempotent: payment already processed
 	}
 
-	// Simulate payment processing (random success/failure)
-	rand.Seed(time.Now().UnixNano())
-	isApproved := rand.Intn(100) < 80 // 80% chance of approval
+	autoApprove := os.Getenv("AUTO_APPROVE_PAYMENTS") == "true"
 
 	var paymentStatus string
-	if isApproved {
-		paymentStatus = entity.StatusApproved
+	if autoApprove {
+		// Lógica atual: Simular processamento (random success/failure)
+		rand.Seed(time.Now().UnixNano())
+		if rand.Intn(100) < 80 {
+			paymentStatus = entity.StatusApproved
+		} else {
+			paymentStatus = entity.StatusRejected
+		}
 	} else {
-		paymentStatus = entity.StatusRejected
+		// Nova lógica: Nasce pendente para aprovação manual via PUT
+		paymentStatus = "PENDING"
 	}
-
 	// Persist payment record
-	payment := entity.NewPayment(uuid.NewString(), paymentRequested.OrderID, paymentRequested.Amount, "Credit Card") // Assuming method
+	payment := entity.NewPayment(uuid.NewString(), paymentRequested.OrderID, paymentRequested.Amount, "Credit Card")
 	payment.Status = paymentStatus
 
 	err = pc.Repo.Save(payment)
 	if err != nil {
-		return nil, fmt.Errorf("error saving payment for order %s: %w", paymentRequested.OrderID, err)
+		return nil, fmt.Errorf("error saving payment: %w", err)
 	}
 
-	// Publish payment.processed event
-	paymentProcessedEvent := event.PaymentProcessed{
-		Event:       "payment.processed",
-		OrderID:     payment.OrderID,
-		Status:      payment.Status,
-		ProcessedAt: time.Now(),
-	}
+	// 2. Só dispara o evento se o pagamento já estiver decidido (Approved ou Rejected)
+	if paymentStatus != "PENDING" {
+		paymentProcessedEvent := event.PaymentProcessed{
+			Event:       "payment.processed",
+			OrderID:     payment.OrderID,
+			Status:      payment.Status,
+			ProcessedAt: time.Now(),
+		}
 
-	err = pc.Broker.Publish(ctx, "payments.exchange", "payment.processed", paymentProcessedEvent)
-	if err != nil {
-		return nil, fmt.Errorf("error publishing payment.processed event for order %s: %w", paymentRequested.OrderID, err)
+		err = pc.Broker.Publish(ctx, "payments.exchange", "payment.processed", paymentProcessedEvent)
+		if err != nil {
+			return nil, fmt.Errorf("error publishing event: %w", err)
+		}
 	}
 
 	return payment, nil

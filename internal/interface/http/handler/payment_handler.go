@@ -66,7 +66,7 @@ func (h *PaymentHandler) Update(w http.ResponseWriter, r *http.Request) {
 		Status: input.Status,
 	}
 
-	err := h.UpdatePayment.Execute(usecaseInput)
+	err := h.UpdatePayment.Execute(r.Context(), usecaseInput)
 	if err != nil {
 		if errors.Is(err, errors.New("payment not found")) {
 			respondWithError(w, http.StatusNotFound, err.Error())

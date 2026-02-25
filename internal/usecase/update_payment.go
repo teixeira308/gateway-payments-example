@@ -1,8 +1,13 @@
 package usecase
 
 import (
+	"context"
 	"errors"
+	"fmt"
+	"gateway-payments/internal/domain/event"
 	"gateway-payments/internal/domain/repository"
+	"gateway-payments/internal/infrastructure/broker"
+	"time"
 )
 
 type UpdatePaymentInput struct {
@@ -11,33 +16,47 @@ type UpdatePaymentInput struct {
 }
 
 type UpdatePayment struct {
-	Repo repository.PaymentRepository
+	Repo   repository.PaymentRepository
+	Broker *broker.RabbitMQClient
 }
 
-func NewUpdatePaymentUseCase(repo repository.PaymentRepository) *UpdatePayment {
+func NewUpdatePaymentUseCase(repo repository.PaymentRepository, broker *broker.RabbitMQClient) *UpdatePayment {
 	return &UpdatePayment{
-		Repo: repo,
+		Repo:   repo,
+		Broker: broker,
 	}
 }
 
-func (up *UpdatePayment) Execute(input UpdatePaymentInput) error {
+func (up *UpdatePayment) Execute(ctx context.Context, input UpdatePaymentInput) error {
 	payment, err := up.Repo.FindByID(input.ID)
 	if err != nil {
 		return errors.New("payment not found")
 	}
 
-	// Validate status transition if necessary, otherwise just set
-	// For this example, we'll assume any status can be set directly.
-	// In a real application, you'd add logic like:
-	// if !payment.CanTransitionTo(input.Status) {
-	//    return errors.New("invalid status transition")
-	// }
-
+	// Atualiza o status
 	payment.Status = input.Status
 
-	err = up.Repo.Save(payment) // Assuming Save also handles updates
+	err = up.Repo.Save(payment)
 	if err != nil {
 		return err
+	}
+
+	// --- O PULO DO GATO ---
+	// Se o status for alterado para algo final (APPROVED ou REJECTED), avisamos o resto do sistema
+	if payment.Status == "APPROVED" || payment.Status == "REJECTED" {
+		paymentProcessedEvent := event.PaymentProcessed{
+			Event:       "payment.processed",
+			OrderID:     payment.OrderID,
+			Status:      payment.Status,
+			ProcessedAt: time.Now(),
+		}
+
+		// Publica na fila para que o ecommerce-api receba e atualize o pedido
+		err = up.Broker.Publish(ctx, "payments.exchange", "payment.processed", paymentProcessedEvent)
+		if err != nil {
+			return fmt.Errorf("error publishing payment.processed event: %w", err)
+		}
+		fmt.Printf("Status do pagamento %s atualizado e enviado para a fila: %s\n", payment.ID, payment.Status)
 	}
 
 	return nil

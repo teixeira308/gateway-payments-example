@@ -54,7 +54,7 @@ func main() {
 	paymentRepo := mysqlRepo.NewPaymentRepository(db)
 
 	createPayment := usecase.NewCreatePaymentUseCase(paymentRepo, rbmqClient)
-	updatePayment := usecase.NewUpdatePaymentUseCase(paymentRepo)
+	updatePayment := usecase.NewUpdatePaymentUseCase(paymentRepo, rbmqClient)
 	getPayment := usecase.NewGetPaymentUseCase(paymentRepo)
 	getAllPayments := usecase.NewGetAllPaymentsUseCase(paymentRepo)
 	deletePayment := usecase.NewDeletePaymentUseCase(paymentRepo)
