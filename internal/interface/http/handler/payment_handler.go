@@ -48,27 +48,6 @@ func NewPaymentHandler(
 	}
 }
 
-func (h *PaymentHandler) Create(w http.ResponseWriter, r *http.Request) {
-	var input dto.CreatePaymentRequest
-
-	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
-		respondWithError(w, http.StatusBadRequest, err.Error())
-		return
-	}
-
-	payment, err := h.CreatePayment.Execute(input.Method, input.Amount, input.OrderID)
-	if err != nil {
-		respondWithError(w, http.StatusBadRequest, err.Error())
-		return
-	}
-
-	response := dto.CreatePaymentResponse(payment)
-
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(response)
-}
-
 func (h *PaymentHandler) Update(w http.ResponseWriter, r *http.Request) {
 	paymentID := chi.URLParam(r, "id")
 	if paymentID == "" {

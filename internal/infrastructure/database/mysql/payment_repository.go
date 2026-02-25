@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"gateway-payments/internal/domain/entity"
+	"gateway-payments/internal/domain/repository"
 )
 
 type PaymentRepository struct {
@@ -75,6 +76,28 @@ func (r *PaymentRepository) FindByID(id string) (*entity.Payment, error) {
 			return nil, fmt.Errorf("payment with ID %s not found", id)
 		}
 		return nil, fmt.Errorf("error finding payment by ID [%s]: %w", id, err)
+	}
+
+	return payment, nil
+}
+
+func (r *PaymentRepository) FindByOrderID(orderID string) (*entity.Payment, error) {
+	payment := &entity.Payment{}
+	query := `SELECT id, method, amount, status, order_id, created_at FROM payments WHERE order_id = ?`
+	err := r.DB.QueryRow(query, orderID).Scan(
+		&payment.ID,
+		&payment.Method,
+		&payment.Amount,
+		&payment.Status,
+		&payment.OrderID,
+		&payment.CreatedAt,
+	)
+
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, &repository.ErrNotFound{Message: fmt.Sprintf("payment with order ID %s not found", orderID)}
+		}
+		return nil, fmt.Errorf("error finding payment by order ID [%s]: %w", orderID, err)
 	}
 
 	return payment, nil

@@ -13,7 +13,6 @@ func NewRouter(
 	router := chi.NewRouter()
 	router.Use(middleware.Logger)
 
-	router.Post("/payments", paymentHandler.Create)
 	router.Put("/payments/{id}", paymentHandler.Update)
 	router.Get("/payments/{id}", paymentHandler.Get)
 	router.Get("/payments", paymentHandler.List)
